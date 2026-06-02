@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-exec "$HOME/.local/bin/trackir-linux-control" center
+: > /tmp/linuxtrack_npclient_center
+echo "center requested"

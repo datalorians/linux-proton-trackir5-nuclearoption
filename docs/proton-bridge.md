@@ -3,6 +3,8 @@
 Nuclear Option has built-in TrackIR support. Under Proton it looks for
 NaturalPoint's `NPClient64.dll`. LinuxTrack provides an open Wine bridge that
 implements the TrackIR client API and forwards tracking data from LinuxTrack.
+This package applies a small patch to that bridge so external hotkeys can
+request recenter and pause without suspending the LinuxTrack camera service.
 
 The install script copies the same bridge into two locations:
 
@@ -23,6 +25,7 @@ Path = C:\linuxtrack
 Run:
 
 ```bash
+./scripts/install-linuxtrack.sh
 ./scripts/build-wine-bridge.sh
 ./scripts/install-nuclear-option-bridge.sh
 ```

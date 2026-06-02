@@ -8,8 +8,9 @@ This repo packages a working LinuxTrack + Wine bridge setup:
 - TrackIR 5 USB access through udev.
 - LinuxTrack built from the maintained exuvo fork.
 - A 64-bit `NPClient64.dll` Wine bridge for Proton games.
+- Bridge-level F9/F10 recenter and pause support, including TrackIR 5 pause LED
+  feedback.
 - Nuclear Option app ID/profile support.
-- F9/F10-style recenter and pause/resume hotkeys.
 - Optional X-55 Rhino yaw virtual-stick workaround for Nuclear Option.
 
 It does not redistribute NaturalPoint firmware, the TrackIR Windows installer,
@@ -70,7 +71,8 @@ Then launch Nuclear Option through Steam. If everything is correct, the in-game
 TrackIR option should work and these global shortcuts should control it:
 
 - `F9`: recenter view
-- `F10`: pause/resume tracking
+- `F10`: pause/resume tracking and switch the TrackIR status LED to the paused
+  color
 
 ## Steam Launch Option
 

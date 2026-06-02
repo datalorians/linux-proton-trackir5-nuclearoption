@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-exec "$HOME/.local/bin/trackir-linux-control" toggle
+flag=/tmp/linuxtrack_npclient_pause
+
+if [[ -e "$flag" ]]; then
+  rm -f "$flag"
+  echo "running"
+else
+  : > "$flag"
+  echo "paused"
+fi

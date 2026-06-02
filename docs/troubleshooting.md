@@ -44,8 +44,7 @@ Lower `Yaw-sensitivity` and `Pitch-sensitivity`, or raise `Yaw-filter` and
 
 ## F9/F10 Do Nothing
 
-The hotkey commands require LinuxTrack to already be running. Start Nuclear
-Option first, enable TrackIR in-game, then try:
+Start Nuclear Option first, enable TrackIR in-game, then try:
 
 ```bash
 ~/.local/bin/trackir-linux-center
@@ -54,3 +53,7 @@ Option first, enable TrackIR in-game, then try:
 
 If the commands work in a terminal but not in-game, your desktop may not allow
 global shortcuts while the Proton game has focus.
+
+If terminal toggle freezes/unfreezes the view but the TrackIR LED does not
+change, restart the game after reinstalling LinuxTrack. The LED behavior lives
+in `ltr_server1`, so already-running sessions keep the old server binary.

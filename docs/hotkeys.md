@@ -1,13 +1,11 @@
 # Hotkeys
 
-The helper binary exposes LinuxTrack actions:
+The helper commands control the patched `NPClient64.dll` bridge with flag files
+in `/tmp`:
 
-```bash
-trackir-linux-control center
-trackir-linux-control pause
-trackir-linux-control resume
-trackir-linux-control toggle
-trackir-linux-control state
+```text
+/tmp/linuxtrack_npclient_center
+/tmp/linuxtrack_npclient_pause
 ```
 
 Wrapper commands:
@@ -19,7 +17,9 @@ Wrapper commands:
 ~/.local/bin/trackir-linux-resume
 ```
 
-These commands only act when the LinuxTrack server is already running.
+This avoids suspending LinuxTrack itself. Pause freezes the last pose returned
+to the game, and the patched LinuxTrack server mirrors the pause state on the
+TrackIR 5 status LED.
 
 ## Cinnamon
 

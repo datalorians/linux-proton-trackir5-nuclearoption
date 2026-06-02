@@ -1,0 +1,205 @@
+diff --git a/src/dyn_load.c b/src/dyn_load.c
+index 5560fb3..4ed24a9 100644
+--- a/src/dyn_load.c
++++ b/src/dyn_load.c
+@@ -11,7 +11,7 @@ void *ltr_int_load_library(char *lib_name, lib_fun_def_t *func_defs)
+     ltr_int_log_message("Couldn't get full name for library %s\n", lib_name);
+     return NULL;
+   }
+-  libhandle = dlopen(full_name, RTLD_NOW | RTLD_LOCAL);
++  libhandle = dlopen(full_name, RTLD_NOW | RTLD_GLOBAL);
+   if(libhandle == NULL){
+     ltr_int_log_message("Couldn't load library '%s' - %s!\n", full_name, dlerror());
+     free(full_name);
+diff --git a/src/ltr_srv_master.cpp b/src/ltr_srv_master.cpp
+index 1bde495..5b7bfef 100644
+--- a/src/ltr_srv_master.cpp
++++ b/src/ltr_srv_master.cpp
+@@ -18,6 +18,7 @@
+ #include <sys/socket.h>
+ #include <sys/un.h>
+ #include <pthread.h>
++#include <dlfcn.h>
+ 
+ #include <map>
+ #include <string>
+@@ -35,6 +36,35 @@ static bool save_prefs = true;
+ static bool no_slaves = false;
+ static pthread_mutex_t send_mx = PTHREAD_MUTEX_INITIALIZER;
+ 
++#define NPCLIENT_PAUSE_FLAG "/tmp/linuxtrack_npclient_pause"
++
++static void update_bridge_pause_led()
++{
++  static bool initialized = false;
++  static bool last_paused = false;
++  typedef bool (*set_status_led_fun)(bool running);
++  static set_status_led_fun set_status_led = NULL;
++  static bool looked_up = false;
++  bool paused = access(NPCLIENT_PAUSE_FLAG, F_OK) == 0;
++
++  if(!looked_up){
++    set_status_led = (set_status_led_fun)dlsym(RTLD_DEFAULT, "ltr_int_set_status_led_tir");
++    if(set_status_led == NULL){
++      ltr_int_log_message("NPClient bridge pause LED: TrackIR LED symbol unavailable.\n");
++    }
++    looked_up = true;
++  }
++
++  if(!initialized || (paused != last_paused)){
++    ltr_int_log_message("NPClient bridge pause LED: %s\n", paused ? "paused" : "running");
++    if(set_status_led != NULL){
++      set_status_led(!paused);
++    }
++    initialized = true;
++    last_paused = paused;
++  }
++}
++
+ 
+ bool ltr_int_gui_lock(bool do_lock)
+ {
+@@ -299,6 +329,10 @@ int ltr_int_master_main_loop(int socket)
+       break;
+     }
+ 
++    if(ltr_int_get_tracking_state() == RUNNING){
++      update_bridge_pause_led();
++    }
++
+     close_conn = false;
+     for(i = 0; i < current_len; ++i){
+       descs[i].revents = 0;
+diff --git a/src/tir.sym b/src/tir.sym
+index 04248c7..a8af831 100644
+--- a/src/tir.sym
++++ b/src/tir.sym
+@@ -3,3 +3,4 @@ ltr_int_rl_shutdown
+ ltr_int_rl_suspend
+ ltr_int_rl_wakeup
+ ltr_int_tir_found
++ltr_int_set_status_led_tir
+diff --git a/src/tir_hw.c b/src/tir_hw.c
+index 8eeaec5..e7f8c27 100644
+--- a/src/tir_hw.c
++++ b/src/tir_hw.c
+@@ -504,6 +504,11 @@ bool set_status_led_tir(bool running)
+   return true;
+ }
+ 
++bool ltr_int_set_status_led_tir(bool running)
++{
++  return set_status_led_tir(running);
++}
++
+ static bool control_status_led_tir(bool status1, bool status2)
+ {
+   unsigned char pkt[] =  {0x19, 0x04, 0x10, 0x00, 0x00};
+diff --git a/src/tir_hw.h b/src/tir_hw.h
+index d03b66f..b4ef791 100644
+--- a/src/tir_hw.h
++++ b/src/tir_hw.h
+@@ -49,6 +49,7 @@ bool ltr_int_pause_tir();
+ bool ltr_int_resume_tir();
+ bool ltr_int_close_tir();
+ bool ltr_int_set_threshold_tir(unsigned int val);
++bool ltr_int_set_status_led_tir(bool running);
+ 
+ void ltr_int_send_sn4_data(uint8_t data[], size_t length);
+ 
+diff --git a/src/wine_bridge/client/NPClient_main.c b/src/wine_bridge/client/NPClient_main.c
+index e84a076..8e8f702 100644
+--- a/src/wine_bridge/client/NPClient_main.c
++++ b/src/wine_bridge/client/NPClient_main.c
+@@ -18,6 +18,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <unistd.h>
+ #include "windef.h"
+ #include "winbase.h"
+ #include "NPClient_dll.h"
+@@ -29,6 +30,12 @@ static bool crypted = false;
+ static unsigned char table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+ static int dbg_flag;
+ static HINSTANCE thisDll;
++static tir_data_t last_data;
++static bool have_last_data = false;
++static bool was_paused = false;
++
++#define NPCLIENT_PAUSE_FLAG "/tmp/linuxtrack_npclient_pause"
++#define NPCLIENT_CENTER_FLAG "/tmp/linuxtrack_npclient_center"
+ 
+ static void dbg_report(const char *msg,...)
+ {
+@@ -236,6 +243,18 @@ static void enhance(unsigned char buf[], unsigned int size,
+   }while(size != 0);
+ }
+ 
++static bool flag_exists(const char *path)
++{
++  return access(path, F_OK) == 0;
++}
++
++static void finish_data(tir_data_t *data)
++{
++  data->cksum = cksum((unsigned char*)data, sizeof(tir_data_t));
++  if(crypted){
++    enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
++  }
++}
+ 
+ /******************************************************************
+  *		NP_GetData (NPCLIENT.8)
+@@ -246,6 +265,36 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
+ {
+   float r, p, y, tx, ty, tz;
+   unsigned int frame;
++  bool paused = flag_exists(NPCLIENT_PAUSE_FLAG);
++
++  if(flag_exists(NPCLIENT_CENTER_FLAG)){
++    unlink(NPCLIENT_CENTER_FLAG);
++    dbg_report("External ReCenter request\n");
++    linuxtrack_recenter();
++  }
++
++  if(paused){
++    if(!was_paused){
++      dbg_report("External pause enabled\n");
++      was_paused = true;
++    }
++    if(have_last_data){
++      memcpy(data, &last_data, sizeof(tir_data_t));
++    }else{
++      memset((char *)data, 0, sizeof(tir_data_t));
++      data->status = 1;
++      finish_data(data);
++      last_data = *data;
++      have_last_data = true;
++    }
++    return 0;
++  }
++
++  if(was_paused){
++    dbg_report("External pause disabled\n");
++    was_paused = false;
++  }
++
+   int res = linuxtrack_get_pose(&y, &p, &r, &tx, &ty, &tz, &frame);
+   memset((char *)data, 0, sizeof(tir_data_t));
+   data->status = (linuxtrack_get_tracking_state() == RUNNING) ? 0 : 1;
+@@ -261,11 +310,9 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
+   data->tx = -limit_num(-16383.0, 32.7 * tx, 16383);
+   data->ty = limit_num(-16383.0, 32.7 * ty, 16383);
+   data->tz = limit_num(-16383.0, 32.7 * tz, 16383);
+-  data->cksum = cksum((unsigned char*)data, sizeof(tir_data_t));
+-  //printf("Cksum: %04X\n", data->cksum);
+-  if(crypted){
+-    enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
+-  }
++  finish_data(data);
++  last_data = *data;
++  have_last_data = true;
+   return (res >= 0) ? 0: 1;
+ }
+ /******************************************************************
