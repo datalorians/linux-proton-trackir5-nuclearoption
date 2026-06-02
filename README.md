@@ -9,6 +9,7 @@ This repo packages a working LinuxTrack + Wine bridge setup:
 - LinuxTrack built from the maintained exuvo fork.
 - A 64-bit `NPClient64.dll` Wine bridge for Proton games.
 - Nuclear Option app ID/profile support.
+- Arma Reforger bridge setup.
 - F9/F10-style recenter and pause/resume hotkeys.
 - Optional X-55 Rhino yaw virtual-stick workaround for Nuclear Option.
 
@@ -59,6 +60,12 @@ Install the Nuclear Option Proton bridge:
 ./scripts/install-nuclear-option-bridge.sh
 ```
 
+Or install the Arma Reforger Proton bridge:
+
+```bash
+./scripts/install-arma-reforger-bridge.sh
+```
+
 Install helper commands and optional Cinnamon hotkeys:
 
 ```bash
@@ -76,6 +83,13 @@ TrackIR option should work and these global shortcuts should control it:
 
 TrackIR starts on demand when the game loads `NPClient64.dll`, so you do not
 need to start LinuxTrack explicitly from Steam.
+
+For Arma Reforger, launch once with this extra prefix if you want the bridge to
+write `NPClient.log` for debugging/profile ID discovery:
+
+```bash
+LINUXTRACK_DBG=w %command%
+```
 
 If you only use TrackIR, your normal launch option can stay as-is.
 
