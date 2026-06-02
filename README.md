@@ -1,94 +1,143 @@
-# Linux TrackIR 5 for Nuclear Option on Proton
+# 🎯 TrackIR 5 for Nuclear Option on Linux / Proton
 
-Community setup notes and helper scripts for using a NaturalPoint TrackIR 5 kit
-with Nuclear Option on Linux through Steam/Proton.
+Use a **NaturalPoint TrackIR 5** camera with **Nuclear Option** on Linux through
+Steam/Proton.
 
-This repo packages a working LinuxTrack + Wine bridge setup:
+This project packages the LinuxTrack + Proton bridge setup that makes Nuclear
+Option see TrackIR as a normal NaturalPoint `NPClient64.dll` device.
 
-- TrackIR 5 USB access through udev.
-- LinuxTrack built from the maintained exuvo fork.
-- A 64-bit `NPClient64.dll` Wine bridge for Proton games.
-- Bridge-level F9/F10 recenter and pause support, including TrackIR 5 pause LED
-  feedback.
-- Nuclear Option app ID/profile support.
+## ✨ What This Does
 
-It does not redistribute NaturalPoint firmware, the TrackIR Windows installer,
-or proprietary NaturalPoint DLLs. You must provide/download the official
-TrackIR installer yourself.
+- Builds LinuxTrack from the maintained `exuvo/linuxtrack` fork.
+- Installs TrackIR 5 USB permissions through a udev rule.
+- Adds a Nuclear Option LinuxTrack profile and NaturalPoint game ID entry.
+- Builds and installs a Proton-compatible `NPClient64.dll` / `NPClient.dll`.
+- Adds bridge-level recenter and pause/resume control.
+- Mirrors pause state to the TrackIR 5 status LED, matching the familiar
+  Windows TrackIR behavior.
 
-## Tested Setup
+## 🚫 What This Does Not Do
 
-- TrackIR 5 camera: USB ID `131d:0158`
-- TrackClip Pro
-- Nuclear Option Steam app ID: `2168680`
-- Proton prefix:
-  `~/.local/share/Steam/steamapps/compatdata/2168680/pfx`
-- Nuclear Option game directory:
-  `~/.local/share/Steam/steamapps/common/Nuclear Option`
-- Linux desktop: Cinnamon/X11
+- It does not include NaturalPoint firmware, NaturalPoint software, or
+  proprietary NaturalPoint DLLs.
+- It does not require a Steam launch option for TrackIR.
 
-Other desktops should work for TrackIR itself, but global hotkeys may need a
-different binding method.
+## ✅ Tested Setup
 
-## Quick Start
+| Item | Value |
+| --- | --- |
+| Game | Nuclear Option |
+| Steam app ID | `2168680` |
+| TrackIR camera | TrackIR 5, USB ID `131d:0158` |
+| Clip | TrackClip Pro |
+| Proton prefix | `~/.local/share/Steam/steamapps/compatdata/2168680/pfx` |
+| Game directory | `~/.local/share/Steam/steamapps/common/Nuclear Option` |
+| Desktop tested | Cinnamon/X11 |
 
-Install dependencies. On Debian/Ubuntu-like systems:
+Other Linux desktops should work, but desktop-level shortcut setup may differ.
+
+## 📦 Install
+
+Install build dependencies first. On Debian/Ubuntu-like systems:
 
 ```bash
 sudo apt install git build-essential autoconf automake libtool pkg-config \
   libusb-1.0-0-dev wine-staging-dev wine mono-utils
 ```
 
-Clone and run the LinuxTrack setup:
+Clone this repo:
 
 ```bash
 git clone https://github.com/datalorians/linux-proton-trackir5-nuclearoption.git
 cd linux-proton-trackir5-nuclearoption
+```
+
+Build/install LinuxTrack and install the TrackIR 5 udev rule:
+
+```bash
 ./scripts/install-linuxtrack.sh
 ./scripts/install-udev-rule.sh
 ```
 
-Log out/in or replug the TrackIR after installing the udev rule.
+Replug the TrackIR camera or log out/in after installing the udev rule.
 
-Extract/install firmware and game data from the official TrackIR 5 Windows
-installer. See [Firmware and Game Data](docs/firmware.md).
+LinuxTrack still needs the firmware/game data from the official TrackIR 5
+Windows installer. See [Firmware and Game Data](docs/firmware.md).
 
-Install the Nuclear Option Proton bridge:
+Install the Nuclear Option profile and Proton bridge:
 
 ```bash
+./scripts/install-profile.sh
+./scripts/build-wine-bridge.sh
 ./scripts/install-nuclear-option-bridge.sh
 ```
 
-Install helper commands and optional Cinnamon hotkeys:
+Install helper commands:
 
 ```bash
 ./scripts/install-helpers.sh
+```
+
+Optional Cinnamon/X11 shortcut installer:
+
+```bash
 ./scripts/install-cinnamon-hotkeys.sh
 ```
 
-Then launch Nuclear Option through Steam. If everything is correct, the in-game
-TrackIR option should work and these global shortcuts should control it:
+## 🎮 Steam Setup
 
-- `F9`: recenter view
-- `F10`: pause/resume tracking and switch the TrackIR status LED to the paused
-  color
+TrackIR starts when Nuclear Option loads the installed `NPClient64.dll`, so
+TrackIR itself does **not** need a Steam launch option.
 
-## Steam Launch Option
+Launch the game normally through Steam. In Nuclear Option, enable TrackIR in
+the game settings.
 
-TrackIR starts on demand when the game loads `NPClient64.dll`, so you do not
-need to start LinuxTrack explicitly from Steam.
+## ⌨️ Recenter and Pause Controls
 
-Your normal launch option can stay as-is.
+The helper commands are:
 
-## Adjusting Sensitivity
+```bash
+trackir-linux-center
+trackir-linux-toggle
+trackir-linux-pause
+trackir-linux-resume
+```
 
-LinuxTrack stores profiles in:
+The optional Cinnamon installer binds these to the classic TrackIR-style keys:
+
+- `F9` for recenter
+- `F10` for pause/resume
+
+Those keys are not a special project feature; they are simply the familiar
+Windows TrackIR defaults. You can bind any keys you want in your desktop
+environment, keyboard utility, Stream Deck, joystick macro tool, or window
+manager.
+
+For example, bind:
+
+```text
+your preferred recenter key -> ~/.local/bin/trackir-linux-center
+your preferred pause key    -> ~/.local/bin/trackir-linux-toggle
+```
+
+Pause freezes the last pose returned to the game. It does not shut down the
+camera service.
+
+## 🔧 Sensitivity and Tuning
+
+LinuxTrack profiles live here:
 
 ```text
 ~/.config/linuxtrack/linuxtrack1.conf
 ```
 
-Nuclear Option uses the profile titled `Nuclear Option`. Common knobs:
+Nuclear Option uses the profile titled:
+
+```text
+Title = Nuclear Option
+```
+
+Common tuning values:
 
 - `Yaw-sensitivity`, `Pitch-sensitivity`, `Roll-sensitivity`
 - `Yaw-filter`, `Pitch-filter`, `Roll-filter`
@@ -99,16 +148,43 @@ Nuclear Option uses the profile titled `Nuclear Option`. Common knobs:
 
 See [Profile Tuning](docs/profile-tuning.md).
 
-## Safety Notes
+## 🧯 Troubleshooting
 
-- Do not commit extracted firmware or proprietary NaturalPoint DLLs.
-- Re-run `scripts/install-nuclear-option-bridge.sh` after changing Proton
-  prefixes or moving the Steam library.
-- Stop Nuclear Option before editing LinuxTrack profiles; LinuxTrack may save
-  profile state on exit.
+Useful files and commands:
 
-## License
+```bash
+trackir-linux-toggle
+trackir-linux-center
+LINUXTRACK_DBG=w %command%
+```
 
-Scripts and helper source in this repository are MIT licensed. LinuxTrack is a
-separate project with its own license. NaturalPoint firmware/software is owned
-by NaturalPoint and is not included here.
+Debug log:
+
+```text
+~/.local/share/Steam/steamapps/common/Nuclear Option/NPClient.log
+```
+
+More notes:
+
+- [Proton Bridge](docs/proton-bridge.md)
+- [Hotkeys](docs/hotkeys.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
+## 🤖 AI Disclosure
+
+This package was developed with assistance from OpenAI's Codex/ChatGPT. The
+scripts, patches, and documentation were reviewed and tested locally before
+publication, but they are community-maintained and provided as-is.
+
+AI disclosure is separate from licensing: the disclosure explains how the work
+was produced, while the license explains what rights you have to use and modify
+the code.
+
+## 📄 License
+
+Repository scripts, helper source, and documentation are released under the
+[MIT License](LICENSE).
+
+LinuxTrack is a separate project with its own license. NaturalPoint firmware,
+software, and trademarks belong to their respective owners and are not included
+in this repository.
