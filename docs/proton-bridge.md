@@ -38,4 +38,4 @@ first.
 TrackIR does not need a special Steam launch option. The bridge starts
 LinuxTrack when the game loads `NPClient64.dll`.
 
-Use a launch option only if you need unrelated pre/post scripts.
+Use a launch option only if you need extra pre/post launch commands.

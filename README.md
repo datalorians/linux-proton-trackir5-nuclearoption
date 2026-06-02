@@ -185,6 +185,5 @@ the code.
 Repository scripts, helper source, and documentation are released under the
 [MIT License](LICENSE).
 
-LinuxTrack is a separate project with its own license. NaturalPoint firmware,
-software, and trademarks belong to their respective owners and are not included
-in this repository.
+LinuxTrack has its own license. NaturalPoint firmware, software, and trademarks
+belong to their respective owners and are not included in this repository.
