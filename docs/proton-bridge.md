@@ -38,9 +38,4 @@ first.
 TrackIR does not need a special Steam launch option. The bridge starts
 LinuxTrack when the game loads `NPClient64.dll`.
 
-Use a launch option only if you also need other pre/post scripts, such as the
-optional X-55 yaw fix:
-
-```bash
-bash -lc '$HOME/.local/bin/x55-nuclear-option-virtual-stick; cleanup(){ $HOME/.local/bin/x55-nuclear-option-stop-virtual-stick; $HOME/.local/bin/trackir-linux-stop; }; trap cleanup EXIT; "$@"; rc=$?; exit $rc' -- %command%
-```
+Use a launch option only if you need unrelated pre/post scripts.

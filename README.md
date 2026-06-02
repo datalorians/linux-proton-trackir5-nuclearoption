@@ -11,7 +11,6 @@ This repo packages a working LinuxTrack + Wine bridge setup:
 - Bridge-level F9/F10 recenter and pause support, including TrackIR 5 pause LED
   feedback.
 - Nuclear Option app ID/profile support.
-- Optional X-55 Rhino yaw virtual-stick workaround for Nuclear Option.
 
 It does not redistribute NaturalPoint firmware, the TrackIR Windows installer,
 or proprietary NaturalPoint DLLs. You must provide/download the official
@@ -79,13 +78,7 @@ TrackIR option should work and these global shortcuts should control it:
 TrackIR starts on demand when the game loads `NPClient64.dll`, so you do not
 need to start LinuxTrack explicitly from Steam.
 
-If you only use TrackIR, your normal launch option can stay as-is.
-
-If you also use the optional X-55 yaw workaround, use:
-
-```bash
-bash -lc '$HOME/.local/bin/x55-nuclear-option-virtual-stick; cleanup(){ $HOME/.local/bin/x55-nuclear-option-stop-virtual-stick; $HOME/.local/bin/trackir-linux-stop; }; trap cleanup EXIT; "$@"; rc=$?; exit $rc' -- %command%
-```
+Your normal launch option can stay as-is.
 
 ## Adjusting Sensitivity
 
@@ -105,17 +98,6 @@ Nuclear Option uses the profile titled `Nuclear Option`. Common knobs:
 - `*-inverted`
 
 See [Profile Tuning](docs/profile-tuning.md).
-
-## Optional X-55 Yaw Fix
-
-Nuclear Option may ignore yaw on some HOTAS devices. The optional evsieve
-workaround creates a virtual joystick and remaps:
-
-```text
-abs:rz -> abs:z
-```
-
-See [X-55 Yaw Fix](docs/x55-yaw-fix.md).
 
 ## Safety Notes
 
