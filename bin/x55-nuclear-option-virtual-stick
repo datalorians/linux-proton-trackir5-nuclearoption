@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+evsieve_bin="${EVSIEVE:-$HOME/.cargo/bin/evsieve}"
+input="${X55_INPUT:-/dev/input/by-id/usb-Madcatz_Saitek_Pro_Flight_X-55_Rhino_Stick_G0013831-event-joystick}"
+log_dir="${X55_LOG_DIR:-$HOME/.local/state/x55-nuclear-option}"
+link="${X55_VIRTUAL_LINK:-$log_dir/virtual-nuclear-option-x55-stick}"
+log="$log_dir/evsieve.log"
+pid_file="$log_dir/evsieve.pid"
+
+mkdir -p "$log_dir"
+
+if [[ ! -x "$evsieve_bin" ]]; then
+  echo "evsieve not found at $evsieve_bin" >&2
+  exit 1
+fi
+
+if [[ ! -e "$input" ]]; then
+  echo "X-55 stick input device not found: $input" >&2
+  exit 1
+fi
+
+if [[ -f "$pid_file" ]]; then
+  old_pid="$(tr -dc '0-9' < "$pid_file" 2>/dev/null || true)"
+  if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
+    kill "$old_pid" || true
+    sleep 0.5
+  fi
+fi
+
+while read -r old_pid; do
+  [[ -n "$old_pid" ]] || continue
+  kill "$old_pid" || true
+done < <(pgrep -f "[e]vsieve .*$input.*virtual-nuclear-option-x55-stick" || true)
+sleep 0.5
+
+{
+  echo "Starting $(date -Is)"
+  echo "Input: $input"
+  echo "Virtual link: $link"
+  echo "Virtual identity: NuclearOptionYawFix 1209:8855"
+  echo "Remap: abs:rz -> abs:z"
+} >> "$log"
+
+setsid "$evsieve_bin" \
+  --input "$input" grab \
+  --map abs:rz abs:z \
+  --output create-link="$link" name="NuclearOptionYawFix" device-id=1209:8855 bus=0003 version=0001 \
+  >> "$log" 2>&1 </dev/null &
+
+pid="$!"
+sleep 2
+
+actual_pid="$(pgrep -f "[e]vsieve .*$input.*virtual-nuclear-option-x55-stick" | tail -n 1 || true)"
+if [[ -z "$actual_pid" ]] && [[ -e "$link" ]]; then
+  actual_pid="$pid"
+fi
+
+if [[ -z "$actual_pid" ]] || [[ ! -e "$link" ]]; then
+  echo "Failed to start evsieve. Log:" >&2
+  tail -80 "$log" >&2
+  exit 1
+fi
+
+echo "$actual_pid" > "$pid_file"
+echo "Started virtual X-55 stick via evsieve."
+echo "PID: $actual_pid"
+echo "Virtual device link: $link"
+echo "Log: $log"

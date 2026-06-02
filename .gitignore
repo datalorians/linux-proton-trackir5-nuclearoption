@@ -1,0 +1,10 @@
+build/
+dist/
+*.o
+*.so
+*.dll
+*.fw
+*.fw.gz
+TrackIR_*.exe
+sgl.dat
+wine-prefix/

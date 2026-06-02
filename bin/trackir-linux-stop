@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pkill -x ltr_server1 2>/dev/null || true
+rm -f "$HOME/.config/linuxtrack/linuxtrack.comm" "$HOME/.config/linuxtrack/ltr_server.lock"

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+input="${X55_INPUT:-/dev/input/by-id/usb-Madcatz_Saitek_Pro_Flight_X-55_Rhino_Stick_G0013831-event-joystick}"
+log_dir="${X55_LOG_DIR:-$HOME/.local/state/x55-nuclear-option}"
+pid_file="$log_dir/evsieve.pid"
+
+if [[ -f "$pid_file" ]]; then
+  old_pid="$(tr -dc '0-9' < "$pid_file" 2>/dev/null || true)"
+  if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
+    kill "$old_pid" || true
+  fi
+fi
+
+while read -r old_pid; do
+  [[ -n "$old_pid" ]] || continue
+  kill "$old_pid" || true
+done < <(pgrep -f "[e]vsieve .*$input.*virtual-nuclear-option-x55-stick" || true)
+
+rm -f "$pid_file"
+echo "Stopped virtual X-55 stick."
